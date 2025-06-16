@@ -2,7 +2,7 @@ unit Clipper.Engine;
 
 (*******************************************************************************
 * Author    :  Angus Johnson                                                   *
-* Date      :  4 May 2025                                                      *
+* Date      :  30 May 2025                                                     *
 * Website   :  https://www.angusj.com                                          *
 * Copyright :  Angus Johnson 2010-2025                                         *
 * Purpose   :  This is the main polygon clipping module                        *
@@ -942,8 +942,6 @@ end;
 function Path1InsidePath2(const op1, op2: POutPt): Boolean;
 var
   op: POutPt;
-  mp: TPoint64;
-  path: TPath64;
   pip: TPointInPolygonResult;
 begin
   // accommodate rounding errors
@@ -965,12 +963,8 @@ begin
     end;
     op := op.next;
   until (op = op1);
-  if (pip <> pipInside) then Exit;
-  // result is likely true but check midpoint
-  // (eg. a triangle with 2 points touching may not be inside)
-  mp := GetBounds(GetCleanPath(op1)).MidPoint;
-  path := GetCleanPath(op2);
-  Result := PointInPolygon(mp, path) = pipInside;
+  // result unclear, so try again using cleaned paths
+  Result := Path2ContainsPath1(GetCleanPath(op1), GetCleanPath(op2)); // (#973)
 end;
 //------------------------------------------------------------------------------
 
@@ -2195,8 +2189,8 @@ begin
   // splitOp, splitOp.next and the intesect pt, if area1 and area2 have the
   // same sign then area2 must be the larger of the splits.
 
-
-  if ((absArea2 < absArea1) and ((area2 > 0) <> (area1 > 0))) then
+  if (absArea2 < 1) or
+    ((absArea2 < absArea1) and ((area2 > 0) <> (area1 > 0))) then
   begin
     Dispose(splitOp.next);
     Dispose(splitOp);
@@ -2394,6 +2388,8 @@ begin
     not IsHotEdge(e) or not IsHotEdge(prev) or
     IsHorizontal(e) or IsHorizontal(prev) or
     IsOpen(e) or IsOpen(prev) then Exit;
+  // Also exit if pt is within a unit of the top of either edge
+  // unless one of the edges is almost horizontal ...
   if ((pt.Y < e.top.Y +2) or (pt.Y < prev.top.Y +2)) and
     ((e.bot.Y > pt.Y) or (prev.bot.Y > pt.Y)) then Exit; // (#490)
 
@@ -2425,6 +2421,9 @@ begin
     not IsHotEdge(e) or not IsHotEdge(next) or
     IsHorizontal(e) or IsHorizontal(next) or
     IsOpen(e) or IsOpen(next) then Exit;
+
+  // Also exit if pt is within a unit of the top of either edge
+  // unless one of the edges is almost horizontal ...
   if ((pt.Y < e.top.Y +2) or (pt.Y < next.top.Y +2)) and
     ((e.bot.Y > pt.Y) or (next.bot.Y > pt.Y)) then Exit; // (#490)
 
@@ -2637,6 +2636,7 @@ begin
   end;
 
   // MANAGING CLOSED PATHS FROM HERE ON
+
   if IsJoined(e1) then UndoJoin(e1, pt);
   if IsJoined(e2) then UndoJoin(e2, pt);
 
@@ -2843,10 +2843,9 @@ begin
     e.prevInSEL := e.prevInAEL;
     e.nextInSEL := e.nextInAEL;
     e.jump := e.nextInSEL;
-    if (e.joinedWith = jwLeft) then
-      e.currX := e.prevInAEL.currX // this also avoids complications
-    else
-      e.currX := TopX(e, topY);
+    // it is safe to ignore 'joined' edges here because
+    // if necessary they will be split in IntersectEdges()
+    e.currX := TopX(e, topY);
     e := e.nextInAEL;
   end;
 end;
@@ -3124,7 +3123,8 @@ begin
       end
       else
         or2.owner := or1;
-    end else // or1 <> or2
+    end
+    else // or1 <> or2, hence joining not splitting
     begin
       or2.pts := nil;
       if FUsingPolytree then
@@ -3405,7 +3405,7 @@ var
       Result := assigned(e);
       // nb: this block isn't yet redundant
     end
-    else if horzEdge.currX < horzEdge.top.X then
+    else if (horzEdge.currX < horzEdge.top.X) then
     begin
       horzLeft := horzEdge.currX;
       horzRight := horzEdge.top.X;
@@ -3445,6 +3445,7 @@ begin
   Y := horzEdge.bot.Y;
   maxVertex := nil;
 
+  // maxVertex - manages consecutive horizontal edges
   if horzIsOpen then
     maxVertex := GetCurrYMaximaVertexOpen(horzEdge) else
     maxVertex := GetCurrYMaximaVertex(horzEdge);
@@ -3749,26 +3750,25 @@ begin
   begin
     split := splits[i];
     if not Assigned(split.pts) and Assigned(split.splits) and
-      CheckSplitOwner(outrec, split.splits) then Exit;          // #942
+      CheckSplitOwner(outrec, split.splits) then Exit; // Result := true (#942)
 
     split := GetRealOutRec(split);
-    if (split = nil) or (split = outrec) or
+    if not Assigned(split) or (split = outrec) or
       (split.recursiveCheck = outrec) then Continue;
-
     split.recursiveCheck := outrec; // prevent infinite loops
+
     if Assigned(split.splits) and CheckSplitOwner(outrec, split.splits) then
       Exit; // Result := true
 
-    if CheckBounds(split) and
-      (split.bounds.Contains(outrec.bounds) and
-      Path1InsidePath2(outrec.pts, split.pts)) then
-    begin
-      if not IsValidOwner(outrec, split) then // split is owned by outrec (#957)
-        split.owner := outrec.owner;
+    if not CheckBounds(split) or
+      not split.bounds.Contains(outrec.bounds) or
+      not Path1InsidePath2(outrec.pts, split.pts) then Continue;
 
-      outrec.owner := split;
-      Exit; // Result := true
-    end;
+    if not IsValidOwner(outrec, split) then // split is owned by outrec (#957)
+      split.owner := outrec.owner;
+
+    outrec.owner := split;
+    Exit; // Result := true
   end;
   Result := false;
 end;
