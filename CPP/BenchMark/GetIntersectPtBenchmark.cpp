@@ -1,3 +1,5 @@
+#define BENCHMARK_FAMILY_ID  "Clipper2GetIntersectPt"
+
 #include "benchmark/benchmark.h"
 #include "clipper2/clipper.h"
 #include "clipper2/clipper.core.h"
@@ -526,7 +528,7 @@ int main(int argc, char** argv)
       std::cout << std::endl << SetConsoleTextColor(green_bold) <<
         "Benchmark GetIntersectPoint performance ... " << SetConsoleTextColor(reset) <<
         std::endl << std::endl;
-      benchmark::RunSpecifiedBenchmarks();
+      benchmark::RunSpecifiedBenchmarks(BENCHMARK_FAMILY_ID, false);
 
       std::cout << std::endl << std::endl << SetConsoleTextColor(green_bold) <<
         "Compare function accuracy ..." << SetConsoleTextColor(reset) << std::endl <<

@@ -56,12 +56,12 @@ void RecheckLastBenchmark(bool use_polytree)
   if (use_polytree)
   {
     BooleanOp(ct, fr, subject, clip, polytree);
-    success = polytree.Count();
+    success = (polytree.Count() > 0);
   }
   else
   {
     solution = BooleanOp(ct, fr, subject, clip);
-    success = solution.size();
+    success = (solution.size() > 0);
   }
   if (success)
     std::cout << "It's OK." << std::endl;

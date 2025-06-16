@@ -1,3 +1,4 @@
+#define USINGZ   // generates a 3D Point<> class (x,y,z) instead of a mere @D one (x, y)
 
 #include <cstdlib>
 #include "clipper2/clipper.h"

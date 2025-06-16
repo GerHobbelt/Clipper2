@@ -1,3 +1,5 @@
+#define BENCHMARK_FAMILY_ID  "Clipper2PointInPolygon"
+
 #include "benchmark/benchmark.h"
 #include "clipper2/clipper.h"
 #include "CommonUtils.h"
@@ -326,6 +328,7 @@ static void DoErrorTest1_internal(const Path64& pts_of_int, const Paths64& paths
       if (pip_func(poi, path) == PointInPolygonResult::IsInside) ++inside_cnt;
     switch (expected)
     {
+	case PointInPolygonResult::IsOn:
     case PointInPolygonResult::IsInside:
       if (inside_cnt != 1) error_points.push_back(poi); break;
     case PointInPolygonResult::IsOutside:
@@ -478,7 +481,7 @@ int main(int argc, char** argv)
   BENCHMARK(BM_PIP1)->Apply(CustomArguments); // current Clipper2
   BENCHMARK(BM_PIP2)->Apply(CustomArguments); // modified Clipper2
   BENCHMARK(BM_PIP3)->Apply(CustomArguments); // Hao et al. (2018)
-  benchmark::RunSpecifiedBenchmarks(benchmark::CreateDefaultDisplayReporter());
+  benchmark::RunSpecifiedBenchmarks(BENCHMARK_FAMILY_ID, false);
   
   std::cout << std::endl << std::endl << SetConsoleTextColor(yellow_bold) <<
     "Benchmarks 2:" << SetConsoleTextColor(reset) << std::endl;
@@ -497,7 +500,7 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < 3; ++i) pipResults[i].resize(paths.size());
 
   // rerun benchmarks using different polygons
-  benchmark::RunSpecifiedBenchmarks(benchmark::CreateDefaultDisplayReporter());
+  benchmark::RunSpecifiedBenchmarks(BENCHMARK_FAMILY_ID, false);
 
   std::cout << std::endl;
   // compare results to ensure they all agree :)

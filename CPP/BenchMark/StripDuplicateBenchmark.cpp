@@ -1,3 +1,5 @@
+#define BENCHMARK_FAMILY_ID  "Clipper2StripDuplicate"
+
 #include "benchmark/benchmark.h"
 #include "clipper2/clipper.h"
 #include "CommonUtils.h"
@@ -69,5 +71,5 @@ int main(int argc, char** argv)
   benchmark::Initialize(0, nullptr);
   BENCHMARK(StripDuplicates_OLD);
   BENCHMARK(StripDuplicates_NEW);
-  benchmark::RunSpecifiedBenchmarks(benchmark::CreateDefaultDisplayReporter());
+  benchmark::RunSpecifiedBenchmarks(BENCHMARK_FAMILY_ID, false);
 }
