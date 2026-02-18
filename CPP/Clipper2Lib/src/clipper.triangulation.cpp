@@ -136,12 +136,12 @@ namespace Clipper2Lib
     return e.vB->pt.y == e.vT->pt.y;
   }
 
-  inline bool LeftTurning(const Point64& p1, const Point64& p2, const Point64& p3)
+  static bool LeftTurning(const Point64& p1, const Point64& p2, const Point64& p3)
   {
     return CrossProductSign(p1, p2, p3) < 0;
   }
 
-  inline bool RightTurning(const Point64& p1, const Point64& p2, const Point64& p3)
+  static bool RightTurning(const Point64& p1, const Point64& p2, const Point64& p3)
   {
     return CrossProductSign(p1, p2, p3) > 0;
   }
@@ -216,12 +216,12 @@ namespace Clipper2Lib
     return true;
   }
 
-  inline size_t Prev(size_t& idx, size_t len)
+  static size_t Prev(size_t& idx, size_t len)
   {
     if (idx == 0) return len - 1; else return idx - 1;
   }
 
-  inline size_t Next(size_t& idx, size_t len)
+  static size_t Next(size_t& idx, size_t len)
   {
     return (idx + 1) % len;
   }
@@ -303,6 +303,9 @@ namespace Clipper2Lib
   static IntersectKind SegsIntersect(const Point64 s1a, const Point64 s1b, 
     const Point64 s2a, const Point64 s2b)
   {
+    //ignore segments sharing an end-point
+    if (s1a == s2a || s1b == s2a || s1b == s2b) return IntersectKind::none;
+
     double dy1 = static_cast<double>(s1b.y - s1a.y);
     double dx1 = static_cast<double>(s1b.x - s1a.x);
     double dy2 = static_cast<double>(s2b.y - s2a.y);
@@ -311,10 +314,10 @@ namespace Clipper2Lib
     if (cp == 0) return IntersectKind::collinear;
 
     double t = (static_cast<double>(s1a.x - s2a.x) * dy2 - 
-      static_cast<double>(s1a.y - s2a.y) * dx2);
-    //ignore segments that 'intersect' at an end-point
-    if (t == 0) return IntersectKind::none;
-    if (t > 0)
+      static_cast<double>(s1a.y - s2a.y) * dx2);    
+
+    // nb: testing for t == 0 is unreliable due to float imprecision
+    if (t >= 0)
     {
       if (cp < 0 || t >= cp) return IntersectKind::none;
     }
@@ -326,8 +329,7 @@ namespace Clipper2Lib
     // so far, the *segment* 's1' intersects the *line* through 's2',
     // but now make sure it also intersects the *segment* 's2'
     t = ((s1a.x - s2a.x) * dy1 - (s1a.y - s2a.y) * dx1);
-    if (t == 0) return IntersectKind::none;
-    if (t > 0)
+    if (t >= 0)
     {
       if (cp > 0 && t < cp) return IntersectKind::intersect;
     }
@@ -372,10 +374,8 @@ namespace Clipper2Lib
     // triangleA and one from triangleB) that touch edge.vL.
     // And edgesB will contain the two edges that touch edge.vR.
     
-    Edge* edgesA[3], * edgesB[3];
-    edgesA[0] = nullptr; // unused
-    edgesB[0] = nullptr; // unused
-
+    Edge* edgesA[3] = { nullptr, nullptr, nullptr };
+    Edge* edgesB[3] = { nullptr, nullptr, nullptr };
     for (int i = 0; i < 3; ++i)
     {
       if (edge->triA->edges[i] == edge) continue;
@@ -436,6 +436,7 @@ namespace Clipper2Lib
     for (int i = 1; i < 3; ++i)
     {
       edge->triA->edges[i] = edgesA[i];
+      if (!edgesA[i]) throw "oops"; // stops compiler warnings 
       if (IsLooseEdge(*edgesA[i]))
         pendingDelaunayStack.push(edgesA[i]);
       // since each edge has its own triangleA and triangleB, we have to be careful
@@ -453,6 +454,7 @@ namespace Clipper2Lib
     for (int i = 1; i < 3; ++i)
     {
       edge->triB->edges[i] = edgesB[i];
+      if (!edgesB[i]) throw "oops"; // stops compiler warnings 
       if (IsLooseEdge(*edgesB[i]))
         pendingDelaunayStack.push(edgesB[i]);
       // since each edge has its own triangleA and triangleB, we have to be careful
@@ -1069,7 +1071,7 @@ namespace Clipper2Lib
     return res;
   }
 
-  inline double DistSqr(const Point64& pt1, const Point64& pt2)
+  static double DistSqr(const Point64& pt1, const Point64& pt2)
   {
     return Sqr(pt1.x - pt2.x) + Sqr(pt1.y - pt2.y);
   }
@@ -1202,7 +1204,7 @@ namespace Clipper2Lib
 
   TriangulateResult Triangulate(const PathsD& pp, int decPlaces, PathsD& solution, bool useDelaunay)
   {
-    int ec;
+    int ec = 0;
     double scale;
     TriangulateResult result;
     if (decPlaces <= 0) scale = 1;

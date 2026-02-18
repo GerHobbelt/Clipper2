@@ -2,7 +2,7 @@ unit Clipper.Core;
 
 (*******************************************************************************
 * Author    :  Angus Johnson                                                   *
-* Date      :  12 October 2025                                                 *
+* Date      :  15 December 2025                                                *
 * Website   :  https://www.angusj.com                                          *
 * Copyright :  Angus Johnson 2010-2024                                         *
 * Purpose   :  Core Clipper Library module                                     *
@@ -181,7 +181,6 @@ function CrossProduct(const vec1, vec2: TPointD): double; overload;
 function CrossProduct(const pt1, pt2, pt3: TPoint64): double; overload;
   {$IFDEF INLINING} inline; {$ENDIF}
 function CrossProductIsZero(const pt1, pt2, pt3: TPoint64): Boolean;
-  {$IFDEF INLINING} inline; {$ENDIF}
 function CrossProductSign(const pt1, pt2, pt3: TPoint64): integer;
 
 function DotProduct(const vec1, vec2: TPointD): double; overload;
@@ -1977,6 +1976,7 @@ function MultiplyUInt64(a, b: UInt64): TUInt128; // #834, #835
 var
   x1, x2, x3: UInt64;
 begin
+  // precondition: neither parameter has its highest bit set
   x1 := (a and $FFFFFFFF) * (b and $FFFFFFFF);
   x2 := (a shr 32) * (b and $FFFFFFFF) + (x1 shr 32);
   x3 := (a and $FFFFFFFF) * (b shr 32) + (x2 and $FFFFFFFF);
@@ -2118,10 +2118,10 @@ begin
       end;
       if (ab.lo64 > cd.lo64)  then Result := 1
       else Result := -1;
-      if (signAB < 0) then Result := -Result;
     end
     else if (ab.hi64 > cd.hi64) then Result := 1
     else Result := -1;
+    if (signAB < 0) then Result := -Result;
   end
   else if (signAB > signCD) then Result := 1
   else Result := -1;
