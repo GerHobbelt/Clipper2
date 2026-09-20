@@ -7,6 +7,11 @@
 
 The <b>Clipper2</b> library performs **intersection**, **union**, **difference** and **XOR** boolean operations on both simple and complex polygons. It also performs **polygon offsetting**, and **Constrained Delaunay Triangulation**. This is a major update of my original <a href="https://sourceforge.net/projects/polyclipping/"><b>Clipper</b></a> library that was written about 15 years ago. That library I'm now calling <b>Clipper1</b>, and while it still works very well, Clipper2 is just [better](https://www.angusj.com/clipper2/Docs/Changes.htm).
 
+```diff
+- CAUTION: The triangulation code is buggy and I regret releasing it when I did.
+- I'm working on fixes but these may still be weeks away. Sorry.
+```
+
 ### Compilers
 <b>Clipper2</b> can be compiled using any one of three supported programming languages: C++, or C#, or Delphi Pascal. The library can also be accessed from other languages by dynamically linking to exported functions in the [C++ compiled Clipper2 library](https://github.com/AngusJohnson/Clipper2/tree/main/DLL). (The C++ compiled code is [measurably](https://www.angusj.com/clipper2/Docs/Changes.htm) faster so, where performance is critical, even C# and Delphi developers may prefer this approach in application development.) 
 | Lang. | Requirements |
@@ -99,5 +104,6 @@ https://github.com/AngusJohnson/Clipper2/blob/2970649befb89af85e2132e5242a7d6926
 | **Kotlin** | https://github.com/Monkey-Maestro/clipper2-kotlin |
 | **Lua** | https://github.com/Ark223/Clipper2-Lua |
 | **Rust** | https://github.com/larsbrubaker/clipper2-rust |
+| **Swift** | https://github.com/zyunlongz/clipper2-swift |
 | **TypeScript** | https://github.com/countertype/clipper2-ts |
 | **WASM** | https://github.com/ErikSom/Clipper2-WASM/ |
